@@ -1,0 +1,61 @@
+---
+title: "Activity Patterns"
+subtitle: "Project 1 in Reproducible Research Course"
+author: "Nicolas Moreno"
+date: "May 28, 2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+options(scipen = 1, digits = 2)
+```
+
+## Loading and preprocessing the data
+
+The data consists of two months of data from an anonymous individual collected during the months of October and November, 2012 and include the number of steps taken in 5 minute intervals each day.
+
+```{r load, cache=FALSE, warning=FALSE, message=FALSE}
+setwd("~/Desktop/DataScience/RepData_PeerAssessment1/")
+if(!file.exists("activity.csv")){
+system("unzip activity.zip")
+}
+activity <- read.csv("activity.csv")
+library(dplyr)
+library(ggplot2)
+```
+
+## Mean Total Number of Steps per Day
+
+```{r meantotalsteps}
+
+totalsteps <- aggregate(steps ~ date, data = activity, FUN = sum, na.rm = TRUE)
+totalstepsmean <- round(mean(totalsteps$steps),2)
+totalstepsmedian <- median(totalsteps$steps)
+
+```
+
+```{r totalstepshistogram}
+ggplot(data=totalsteps, aes(steps)) +
+  geom_histogram(breaks=seq(0,25000,by=5000)) 
+```
+
+The mean total number of steps is `r round(totalstepsmean,2)` and the median is `r totalstepsmedian`.
+
+## Average Daily Activity Pattern 
+
+```{r computetime, echo=FALSE}
+time <- format(Sys.time(), "%a %b %d %X %Y")
+rand <- rnorm(1)
+```
+
+The current time is `r time`. My favorite random number is `r rand`.
+```{r simulate data, echo=TRUE}
+x <- rnorm(100); y <- x + rnorm(100, sd = 0.5)
+```
+
+```{r scatterplot, fig.height=4}
+par(mar= c(5,4,1,1), las =1)
+plot(x,y, main = "My simulated Data")
+```
+
