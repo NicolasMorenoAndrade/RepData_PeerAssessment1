@@ -8,7 +8,7 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-options(scipen = 1, digits = 2)
+options(scipen = 1, digits = 3)
 ```
 
 ## Loading and preprocessing the data
@@ -23,9 +23,10 @@ system("unzip activity.zip")
 activity <- read.csv("activity.csv")
 library(dplyr)
 library(ggplot2)
+library(lattice)
 ```
 
-## Mean Total Number of Steps per Day
+## Mean total number of steps per day
 
 ```{r meantotalsteps}
 
@@ -42,20 +43,55 @@ ggplot(data=totalsteps, aes(steps)) +
 
 The mean total number of steps is `r round(totalstepsmean,2)` and the median is `r totalstepsmedian`.
 
-## Average Daily Activity Pattern 
+## Average daily activity pattern 
 
-```{r computetime, echo=FALSE}
-time <- format(Sys.time(), "%a %b %d %X %Y")
-rand <- rnorm(1)
+
+```{r averageDailyActivity}
+totalstepsinterval <- aggregate(steps ~ interval, data=activity, FUN = mean)
+maxinterval <- totalstepsinterval[which.max(totalstepsinterval$steps),]
+plot(totalstepsinterval$interval,totalstepsinterval$steps, type="l", xlab="Interval", ylab="Steps",main="Average Number of Steps per Day by Interval")
+
 ```
 
-The current time is `r time`. My favorite random number is `r rand`.
-```{r simulate data, echo=TRUE}
-x <- rnorm(100); y <- x + rnorm(100, sd = 0.5)
+On average across all the days in the dataset, the maximum number of steps is `r maxinterval[,"steps"]` and correspond to interval `r maxinterval[,"interval"]`.
+
+## Imputing missing values
+
+```{r}
+naNumber <- sum(!complete.cases(activity))
 ```
 
-```{r scatterplot, fig.height=4}
-par(mar= c(5,4,1,1), las =1)
-plot(x,y, main = "My simulated Data")
+There are `r naNumber` missing values in the data set. The missing values are going to be filled with the mean of the corresponding 5 minute interval.
+
+```{r fillMissingValues}
+impute.mean <- function(x) replace(x, is.na(x), mean(x, na.rm = TRUE))
+activity$stepsisna <- is.na(activity$steps)
+activity %>%
+    group_by(interval) %>%
+    mutate(steps = impute.mean(steps)) -> activityNoNAs
 ```
+
+```{r meantotalstepsNoNas}
+
+totalstepsNoNas <- aggregate(steps ~ date, data = activityNoNAs, FUN = sum, na.rm = TRUE)
+totalstepsmeanNoNas <- round(mean(totalstepsNoNas$steps),2)
+totalstepsmedianNoNas <- round(median(totalstepsNoNas$steps),3)
+totalstepsNoNas$imputed <- "Imputed data"
+totalsteps$imputed <- "Original Data"
+bindedsteps <- rbind(totalstepsNoNas, totalsteps)
+
+```
+
+```{r totalstepshistogramNoNas}
+ggplot(data=bindedsteps, aes(steps, fill=imputed)) +
+  geom_histogram(breaks=seq(0,25000,by=5000)) +
+  facet_grid(. ~ imputed) +
+  theme(legend.position = 'none')
+```
+
+The mean total number of steps for the activity data after replacement of NAs is `r round(totalstepsmeanNoNas,2)` and the median is `r round(totalstepsmedianNoNas,3)`. The difference is very small when compared with the values from the original data. The mean doesn't change, and the median has a small change. The new median is now almost identical to the mean. This could be due to the fact that I use means for intervals, thus get more data points quite similar or identical to the mean, and so the median is so shifted to become almost equal to the mean. Probably it would be different if I had used the daily mean or some other strategy to fill the NA values. 
+
+## Are there differences in activity patterns between weekdays and weekends?
+
+
 
